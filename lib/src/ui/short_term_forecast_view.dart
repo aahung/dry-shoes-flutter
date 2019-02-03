@@ -13,7 +13,7 @@ class ShortTermForecastView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final feelLike = shortTerm.temperature;
-    final rain = shortTerm.rainValue == 0 ? ':-)' : shortTerm.rain;
+    final rainOrSnow = shortTerm.rainValue == 0 ? (shortTerm.snowValue == 0 ? ':-)' : shortTerm.snow) : shortTerm.rain;
     var decoration = BoxDecoration(
       image: DecorationImage(
         image: AssetImage(shortTerm.iconPath),
@@ -58,7 +58,7 @@ class ShortTermForecastView extends StatelessWidget {
             ),
           ),
           Text(
-            rain,
+            rainOrSnow,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w300,

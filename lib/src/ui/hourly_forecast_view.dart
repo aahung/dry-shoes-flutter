@@ -13,7 +13,7 @@ class HourlyForecastView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percentage = hourly.rainPercentage;
+    final percentage = hourly.snowPercentage > 0 ? hourly.snowPercentage : hourly.rainPercentage;
     return Column(
       children: <Widget>[
         Container(
@@ -77,10 +77,10 @@ class HourlyForecastView extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    hourly.rain,
+                    hourly.snowValue > 0 ? hourly.snow : hourly.rain,
                     style: TextStyle(
                       fontWeight: FontWeight.w200,
-                      color: hourly.rainValue == 0 ? Colors.transparent : Colors.black,
+                      color: (hourly.rainValue + hourly.snowValue) == 0 ? Colors.transparent : Colors.black,
                     ),
                   )
                 ],
