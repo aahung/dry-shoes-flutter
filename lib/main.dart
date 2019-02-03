@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:math';
 import 'dart:async';
-import 'package:percent_indicator/percent_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sticky_headers/sticky_headers.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+
+import 'src/ui/city_forecast_list.dart';
 
 void main() => runApp(MyApp());
 
@@ -19,6 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // showPerformanceOverlay: true,
       title: 'DryShoes',
       theme: ThemeData(
         // This is the theme of your application.
@@ -57,31 +54,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   
-  var _lastResultTime = 0;
-  var _location = defaultLocation;
-  var _code = defaultCode;
-  var _unit = defaultUnit;
-  var _hourlies = [];
-  var _shortTerms = [];
+  String _location;
+  String _code;
+  String _unit;
   SharedPreferences prefs;
-
-  Future<void> _refresh() async {
-    try {
-      var url = 'https://appframework.pelmorex.com/api/appframework/'
-          + 'WeatherData/getData/iPhone?appVersion=5.3.0.1498&configVersion=103&'
-          + 'dataType=Hourly,ShortTerm&deviceLang=en-US&deviceLocale=en-US&'
-          + 'location=$_code&measurementUnit=metric&resourceCommonVersion=0&'
-          + 'resourceVersion=0&tempUnit=$_unit';
-      final response = await http.get(url);
-      final responseJson = jsonDecode(response.body);
-      setState(() {
-        _hourlies = responseJson['Hourly']['Hourlies'];
-        _shortTerms = responseJson['ShortTerm']['ShortTerms'];
-      });
-    } catch (e) {
-      print(e.toString());
-    }
-  }
 
   Future<void> loadPrefs() async {
     prefs = await SharedPreferences.getInstance();
@@ -101,7 +77,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void _setUnitF(f) {
     setState(() {
       _unit = f ? 'F' : 'C';
-      _refresh();
       savePrefs();
     });
   }
@@ -110,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    loadPrefs().then((_) => _refresh());
+    loadPrefs();
   }
 
   @override
@@ -122,134 +97,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refresh();
+      // force rebuild so it can fetch
+      setState(() {
+        _code = _code;
+      });
     }
-  }
-
-  Widget buildHourly(hourly) {
-    var rainValue = hourly['RainValue'];
-    if (hourly['RainUnit'] == 'cm') {
-      rainValue *= 10;
-    }
-    const fullRainValue = 5;
-    final percentage = min<double>(rainValue / fullRainValue, 1.0);
-    dynamic image = Text('');
-    final String icon = hourly['Icon'];
-    if (icon.startsWith('wxicon')) {
-      final iconNum = int.parse(icon.split('wxicon')[1]);
-      if (iconNum >= 1 && iconNum <= 33) {
-        image = Image.asset(
-          'assets/wxicons/$iconNum.png',
-          height: 20,
-        );
-      }
-    } 
-    return Column(
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.only(left: 10.0, right: 10.0, top: 10.0),
-          child: Column(
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Container(
-                    width: 70.0,
-                    child: Text(
-                      hourly['Period'],
-                      style: TextStyle(
-                        fontSize: 20.0,
-                      ),
-                    ),
-                  ),
-                  OrientationBuilder(
-                    builder: (context, orientation) {
-                      return LinearPercentIndicator(
-                        width: MediaQuery.of(context).size.width - 160,
-                        progressColor: Colors.blueAccent,
-                        backgroundColor: Colors.transparent,
-                        percent: percentage,
-                      );
-                    }
-                  ),
-                  Container(
-                    width: 70.0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        Text(
-                          hourly['FeelsLike'],
-                          style: TextStyle(
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.w200,
-                          ),
-                        ),
-                        Text(
-                          hourly['TemperatureDegree'],
-                          style: TextStyle(
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.w200,
-                          ),
-                        ),
-                        Text(
-                          hourly['TemperatureUnit'],
-                          style: TextStyle(
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.w200,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      image,
-                      Text(
-                        ' ' + hourly['Condition'],
-                        style: TextStyle(
-                          fontWeight: FontWeight.w200,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    hourly['RainDisplay'] + hourly['RainUnit'],
-                    style: TextStyle(
-                      fontWeight: FontWeight.w200,
-                      color: hourly['RainDisplay'] == '0' ? Colors.transparent : Colors.black,
-                    ),
-                  )
-                ],
-              )
-            ],
-          )
-        ),
-      ],
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    
-    var numSection = 0;
-    if (_shortTerms.length > 0) numSection += 1;
-    var groups = [];
-    var groupedHourlies = {};
-    for (var hourly in _hourlies) {
-      final day = hourly['PeriodDay'];
-      if (!groups.contains(day)) {
-        groups.add(day);
-        groupedHourlies[day] = [];
-        numSection += 1;
-      }
-      groupedHourlies[day].add(hourly);
-    }
-
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -282,128 +138,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       body: Column(
         children: <Widget>[
           Expanded(
-            child: LiquidPullToRefresh(
-              onRefresh: _refresh,
-              showChildOpacityTransition: false,
-              child: ListView.builder(
-                itemCount: numSection,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return MediaQuery( // freeze the text scaling because it will affect the height
-                      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0x11000000),
-                              blurRadius: 4.0, // has the effect of softening the shadow
-                              spreadRadius: 0.0, // has the effect of extending the shadow
-                              offset: Offset(
-                                0.0, 6.0
-                              ),
-                            )
-                          ]
-                        ),
-                        height: 200,
-                        margin: EdgeInsets.only(bottom: 20.0),
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _shortTerms.length,
-                          itemBuilder: (context, index) {
-                            final shortTerm = _shortTerms[index];
-                            final feelLike = shortTerm['FeelsLike']
-                              + shortTerm['TemperatureDegree']
-                              + shortTerm['TemperatureUnit'];
-                            final rain = (shortTerm['RainDisplay']) == '0' ? 
-                              ':-)' : shortTerm['RainDisplay'] + shortTerm['RainUnit'];
-                            var decoration;
-                            final String icon = shortTerm['Icon'];
-                            if (icon.startsWith('wxicon')) {
-                              final iconNum = int.parse(icon.split('wxicon')[1]);
-                              if (iconNum >= 1 && iconNum <= 33) {
-                                decoration = BoxDecoration(
-                                  image: DecorationImage(
-                                    image: AssetImage('assets/wxicons/$iconNum.png'),
-                                    fit: BoxFit.contain,
-                                    colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.2), BlendMode.dstATop)
-                                  ),
-                                );
-                              }
-                            } 
-                            return Container(
-                              width: 150.0,
-                              padding: EdgeInsets.all(20.0),
-                              decoration: decoration,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: <Widget>[
-                                  Text(
-                                    shortTerm['PeriodDay'],
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w100,
-                                    ),
-                                  ),
-                                  Text(
-                                    shortTerm['Period'],
-                                    style: TextStyle(
-                                      fontSize: 23,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    shortTerm['WindSpeed'],
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                  Text(
-                                    feelLike,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                  Text(
-                                    rain,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  }
-                  final group = groups[index - 1];
-                  var groupText = (group == groups[0]) ? 'Today' : group;
-                  final hourlies = groupedHourlies[group];
-                  return StickyHeader(
-                    header: new Container(
-                      height: 30.0,
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: new EdgeInsets.all(10.0),
-                      alignment: Alignment.centerLeft,
-                      child: new Text(groupText,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    content: Column(
-                      children: hourlies.map<Widget>(buildHourly).toList(),
-                    ),
-                  );
-                }
-              ),
+            child: _code == null ? Container : CityForecastList(
+              cityCode: _code,
+              tempUnit: _unit,
             ),
           ),
         ],

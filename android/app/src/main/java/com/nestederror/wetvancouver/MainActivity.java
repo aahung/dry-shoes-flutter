@@ -1,4 +1,4 @@
-package com.example.wetvancouverflutter;
+package com.nestederror.wetvancouver;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;
