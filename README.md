@@ -1,16 +1,15 @@
-# wetvancouver_flutter
+# Dry shoes flutter
 
-A new Flutter project.
+A flutter weather app using unofficial Weather network API. This app is for educational purpose only.
 
-## Getting Started
+![screenshot](screenshot.png)
 
-This project is a starting point for a Flutter application.
+## Licenses
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.io/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.io/docs/cookbook)
-
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.io/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+- [flutter](https://github.com/flutter/flutter/blob/master/LICENSE)
+- [rxdart](https://github.com/ReactiveX/rxdart/blob/master/LICENSE)
+- [http](https://github.com/dart-lang/http/blob/master/LICENSE)
+- [percent_indicator](https://github.com/diegoveloper/flutter_percent_indicator/blob/master/LICENSE)
+- [shared_preferences](https://github.com/flutter/plugins/blob/master/packages/shared_preferences/LICENSE)
+- [sticky_headers](https://github.com/fluttercommunity/flutter_sticky_headers/blob/master/LICENSE)
+- [liquid_pull_to_refresh](https://github.com/aagarwal1012/Liquid-Pull-To-Refresh/blob/master/LICENSE)
